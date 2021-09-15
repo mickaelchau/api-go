@@ -34,13 +34,12 @@ func handleHome(response http.ResponseWriter, request *http.Request) {
 }
 
 func returnAllPokemons(response http.ResponseWriter, request *http.Request) {
-	fmt.Println("That's all the Pokemons!")
 	json.NewEncoder(response).Encode(Pokedex)
 }
 
 func returnSinglePokemon(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	key := vars["id"]
+	key := vars["Id"]
 
 	for _, pokemon := range Pokedex {
 		if pokemon.Id == key {
@@ -64,10 +63,10 @@ func addToPokedex(response http.ResponseWriter, request *http.Request) {
 
 func removeFromPokedex(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	id := vars["id"]
+	Id := vars["Id"]
 
 	for index, pokemon := range Pokedex {
-		if pokemon.Id == id {
+		if pokemon.Id == Id {
 			Pokedex = append(Pokedex[:index], Pokedex[index+1:]...)
 		}
 	}
@@ -94,8 +93,8 @@ func handleRequests() {
 
 	router.HandleFunc("/", handleHome)
 	router.HandleFunc("/pokemons", returnAllPokemons)
-	router.HandleFunc("/pokemon/{id}", removeFromPokedex).Methods("DELETE")
-	router.HandleFunc("/pokemon/{id}", returnSinglePokemon)
+	router.HandleFunc("/pokemon/{Id}", removeFromPokedex).Methods("DELETE")
+	router.HandleFunc("/pokemon/{Id}", returnSinglePokemon)
 	router.HandleFunc("/pokemon", addToPokedex).Methods("POST")
 	router.HandleFunc("/pokemon", updatePokedex).Methods("PUT")
 	log.Fatal(http.ListenAndServe(":8000", router))
