@@ -5,79 +5,76 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"mickael/api-server/dynamo"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-type Pokemon struct {
-	Id        string `json:"Id"`
-	Name      string `json:"Name"`
-	Evolution int    `json:"Evolution"`
-	Element   string `json:"Element"`
+var Pokedex = []dynamo.Pokemon{
+	{Name: "Salamèche", Evolution: 1, Element: "Feu"},
+	{Name: "Reptincel", Evolution: 2, Element: "Feu"},
+	{Name: "Dracaufeu", Evolution: 3, Element: "Feu"},
 }
 
-var Pokedex = []Pokemon{
-	{Id: "1", Name: "Salamèche", Evolution: 1, Element: "Feu"},
-	{Id: "2", Name: "Reptincel", Evolution: 2, Element: "Feu"},
-	{Id: "3", Name: "Dracaufeu", Evolution: 3, Element: "Feu"},
-	{Id: "4", Name: "Carapuce", Evolution: 1, Element: "Eau"},
-	{Id: "5", Name: "Carabaffe", Evolution: 2, Element: "Eau"},
-	{Id: "6", Name: "Tortank", Evolution: 3, Element: "Eau"},
-	{Id: "7", Name: "Bulbizare", Evolution: 1, Element: "Plante"},
-	{Id: "8", Name: "Herbizare", Evolution: 2, Element: "Plante"},
-	{Id: "9", Name: "Florizare", Evolution: 3, Element: "Plante"},
+/*
+	{Name: "Carapuce", Evolution: 1, Element: "Eau", PokemonId: 4},
+	{Name: "Carabaffe", Evolution: 2, Element: "Eau", PokemonId: 5},
+	{Name: "Tortank", Evolution: 3, Element: "Eau", PokemonId: 6},
+	{Name: "Bulbizare", Evolution: 1, Element: "Plante", PokemonId: 7},
+	{Name: "Herbizare", Evolution: 2, Element: "Plante", PokemonId: 8},
+	{Name: "Florizare", Evolution: 3, Element: "Plante", PokemonId: 9},
 }
+*/
 
 func handleHome(response http.ResponseWriter, request *http.Request) {
 	fmt.Fprintf(response, "Hello, this application is an awesome Pokedex !")
 }
 
 func returnAllPokemons(response http.ResponseWriter, request *http.Request) {
-	json.NewEncoder(response).Encode(Pokedex)
+	var db_pokedex []dynamo.Pokemon = dynamo.DynamoGetItems()
+	json.NewEncoder(response).Encode(db_pokedex)
 }
 
 func returnSinglePokemon(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	key := vars["Id"]
+	key := vars["name"]
 
 	for _, pokemon := range Pokedex {
-		if pokemon.Id == key {
+		if pokemon.Name == key {
 			json.NewEncoder(response).Encode(pokemon)
 		}
 	}
 }
 
 func addToPokedex(response http.ResponseWriter, request *http.Request) {
-	/*if response.Header.Values("Content-Type")[0] != "application/json" {
-		content.WriteHeader(http.StatusBadGateway)
-	} */
 	reqBody, _ := ioutil.ReadAll(request.Body)
-	var pokemon Pokemon
+	var pokemon dynamo.Pokemon
 	json.Unmarshal(reqBody, &pokemon) //transform the JSON reqBody to a pokemon
 
-	Pokedex = append(Pokedex, pokemon)
-	pokemon.Id = fmt.Sprintf("%d", len(Pokedex))
-	json.NewEncoder(response).Encode(pokemon) //Response the object pokemon (does not make sense, we should send an object ID)
+	var dbResponse dynamo.AddResponse
+	dbResponse.Added = dynamo.DynamoAdd(pokemon)
+	dbResponse.Pokemon = pokemon.Name
+	json.NewEncoder(response).Encode(dbResponse)
 }
 
 func removeFromPokedex(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	Id := vars["Id"]
-
-	for index, pokemon := range Pokedex {
-		if pokemon.Id == Id {
-			Pokedex = append(Pokedex[:index], Pokedex[index+1:]...)
-		}
-	}
-	json.NewEncoder(response).Encode(Pokedex)
+	name := vars["name"]
+	var dbResponse dynamo.DeleteResponse
+	dbResponse.Deleted = dynamo.DynamoDelete(name)
+	dbResponse.Pokemon = name
+	json.NewEncoder(response).Encode(dbResponse)
 }
+
+/*
+WITH DYNAMODB, ADD AND UPDATE ARE THE SAME
 func updatePokedex(response http.ResponseWriter, request *http.Request) {
 	reqBody, _ := ioutil.ReadAll(request.Body)
-	var pokemon Pokemon
+	var pokemon dynamo.Pokemon
 	json.Unmarshal(reqBody, &pokemon)
 	for _, db_pokemon := range Pokedex {
-		if db_pokemon.Id == pokemon.Id {
+		if db_pokemon.Name == pokemon.Name {
 			db_pokemon.Name = pokemon.Name
 			db_pokemon.Evolution = pokemon.Evolution
 			db_pokemon.Element = pokemon.Element
@@ -87,16 +84,14 @@ func updatePokedex(response http.ResponseWriter, request *http.Request) {
 	fmt.Println("testst")
 	json.NewEncoder(response).Encode(Pokedex)
 }
-
+*/
 func handleRequests() {
 	router := mux.NewRouter().StrictSlash(true)
-
 	router.HandleFunc("/", handleHome)
 	router.HandleFunc("/pokemons", returnAllPokemons)
-	router.HandleFunc("/pokemon/{Id}", removeFromPokedex).Methods("DELETE")
-	router.HandleFunc("/pokemon/{Id}", returnSinglePokemon)
-	router.HandleFunc("/pokemon", addToPokedex).Methods("POST")
-	router.HandleFunc("/pokemon", updatePokedex).Methods("PUT")
+	router.HandleFunc("/pokemon/{name}", removeFromPokedex).Methods("DELETE")
+	router.HandleFunc("/pokemon/{name}", returnSinglePokemon)
+	router.HandleFunc("/pokemon", addToPokedex).Methods("POST", "PUT")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 
