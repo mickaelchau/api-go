@@ -17,16 +17,6 @@ var Pokedex = []dynamo.Pokemon{
 	{Name: "Dracaufeu", Evolution: 3, Element: "Feu"},
 }
 
-/*
-	{Name: "Carapuce", Evolution: 1, Element: "Eau", PokemonId: 4},
-	{Name: "Carabaffe", Evolution: 2, Element: "Eau", PokemonId: 5},
-	{Name: "Tortank", Evolution: 3, Element: "Eau", PokemonId: 6},
-	{Name: "Bulbizare", Evolution: 1, Element: "Plante", PokemonId: 7},
-	{Name: "Herbizare", Evolution: 2, Element: "Plante", PokemonId: 8},
-	{Name: "Florizare", Evolution: 3, Element: "Plante", PokemonId: 9},
-}
-*/
-
 func handleHome(response http.ResponseWriter, request *http.Request) {
 	fmt.Fprintf(response, "Hello, this application is an awesome Pokedex !")
 }
@@ -78,13 +68,12 @@ func updatePokedex(response http.ResponseWriter, request *http.Request) {
 			db_pokemon.Name = pokemon.Name
 			db_pokemon.Evolution = pokemon.Evolution
 			db_pokemon.Element = pokemon.Element
-			log.Printf("%s", pokemon.Name)
 		}
 	}
-	fmt.Println("testst")
 	json.NewEncoder(response).Encode(Pokedex)
 }
 */
+
 func handleRequests() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", handleHome)
