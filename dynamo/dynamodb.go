@@ -13,7 +13,7 @@ import (
 type Pokemon struct {
 	Name      string `json:"name"`
 	Evolution int    `json:"evolution"`
-	Element   string `json:"element"` //Element is mapped to element in JSON
+	Poketype  string `json:"poketype"` //Pokepokepoketype is mapped to pokepoketype in JSON
 }
 
 type AddResponse struct {
@@ -39,6 +39,28 @@ func InitSession() *dynamodb.DynamoDB {
 
 	// Create DynamoDB client
 	return dynamodb.New(sess)
+}
+func DynamoGetPokemon(pokeName string) Pokemon {
+	svc := InitSession()
+	var pokemon Pokemon
+	result, err := svc.GetItem(&dynamodb.GetItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"name": {
+				S: aws.String(pokeName),
+			},
+		},
+		TableName: aws.String(tableName),
+	})
+	if err != nil {
+		log.Fatalf("Got error calling DeleteItem: %s", err)
+	}
+	if result.Item == nil {
+		log.Fatal("Could not find '" + pokeName + "'")
+	}
+	pokemon.Name = *result.Item["name"].S
+	pokemon.Poketype = *result.Item["poketype"].S
+	pokemon.Evolution, _ = strconv.Atoi(*result.Item["evolution"].N)
+	return pokemon
 }
 
 func DynamoAdd(pokemon Pokemon) bool {
@@ -80,7 +102,7 @@ func DynamoDelete(pokeName string) bool {
 	return true
 }
 
-func DynamoGetItems() []Pokemon {
+func DynamoGetPokedex() []Pokemon {
 	svc := InitSession()
 	out, err := svc.Scan(&dynamodb.ScanInput{
 		TableName: aws.String(tableName),
@@ -92,14 +114,14 @@ func DynamoGetItems() []Pokemon {
 	var pokemon Pokemon
 	var name string
 	var evolution int
-	var element string
+	var poketype string
 	for _, poke := range out.Items {
 		name = *poke["name"].S //get the attribute "name" in map and get the str associated with it
 		evolution, _ = strconv.Atoi(*poke["evolution"].N)
-		element = *poke["element"].S
+		poketype = *poke["poketype"].S
 		pokemon.Name = name
 		pokemon.Evolution = evolution
-		pokemon.Element = element
+		pokemon.Poketype = poketype
 		db_pokemon = append(db_pokemon, pokemon)
 	}
 	return db_pokemon

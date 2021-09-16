@@ -11,30 +11,21 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var Pokedex = []dynamo.Pokemon{
-	{Name: "Salamèche", Evolution: 1, Element: "Feu"},
-	{Name: "Reptincel", Evolution: 2, Element: "Feu"},
-	{Name: "Dracaufeu", Evolution: 3, Element: "Feu"},
-}
-
 func handleHome(response http.ResponseWriter, request *http.Request) {
 	fmt.Fprintf(response, "Hello, this application is an awesome Pokedex !")
 }
 
 func returnAllPokemons(response http.ResponseWriter, request *http.Request) {
-	var db_pokedex []dynamo.Pokemon = dynamo.DynamoGetItems()
+	var db_pokedex []dynamo.Pokemon = dynamo.DynamoGetPokedex()
 	json.NewEncoder(response).Encode(db_pokedex)
 }
 
 func returnSinglePokemon(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	key := vars["name"]
+	name := vars["name"]
+	dbResponse := dynamo.DynamoGetPokemon(name)
+	json.NewEncoder(response).Encode(dbResponse)
 
-	for _, pokemon := range Pokedex {
-		if pokemon.Name == key {
-			json.NewEncoder(response).Encode(pokemon)
-		}
-	}
 }
 
 func addToPokedex(response http.ResponseWriter, request *http.Request) {
@@ -67,7 +58,7 @@ func updatePokedex(response http.ResponseWriter, request *http.Request) {
 		if db_pokemon.Name == pokemon.Name {
 			db_pokemon.Name = pokemon.Name
 			db_pokemon.Evolution = pokemon.Evolution
-			db_pokemon.Element = pokemon.Element
+			db_pokemon.Type = pokemon.Type
 		}
 	}
 	json.NewEncoder(response).Encode(Pokedex)
