@@ -55,7 +55,7 @@ func DynamoGetPokemon(pokeName string) Pokemon {
 		log.Fatalf("Got error calling DeleteItem: %s", err)
 	}
 	if result.Item == nil {
-		log.Fatal("Could not find '" + pokeName + "'")
+		return pokemon
 	}
 	pokemon.Name = *result.Item["name"].S
 	pokemon.Poketype = *result.Item["poketype"].S
