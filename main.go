@@ -76,5 +76,6 @@ func handleRequests() {
 }
 
 func main() {
+	//dynamo.InitEc2()
 	handleRequests()
 }

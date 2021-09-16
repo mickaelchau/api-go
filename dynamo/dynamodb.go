@@ -1,6 +1,7 @@
 package dynamo
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
 type Pokemon struct {
@@ -40,6 +42,27 @@ func InitSession() *dynamodb.DynamoDB {
 	// Create DynamoDB client
 	return dynamodb.New(sess)
 }
+
+func InitEc2() {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+	svc := ec2.New(sess)
+
+	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
+		// An Amazon Linux AMI ID for t2.micro instances in the us-west-2 region
+		ImageId:      aws.String("ami-072056ff9d3689e7b"),
+		InstanceType: aws.String("t2.micro"),
+		MinCount:     aws.Int64(1),
+		MaxCount:     aws.Int64(1),
+	})
+	if err != nil {
+		fmt.Println("Could not create instance", err)
+		return
+	}
+	fmt.Println("Created instance", *runResult.Instances[0].InstanceId)
+}
+
 func DynamoGetPokemon(pokeName string) Pokemon {
 	svc := InitSession()
 	var pokemon Pokemon
