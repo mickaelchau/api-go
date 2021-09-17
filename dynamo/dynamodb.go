@@ -1,7 +1,6 @@
 package dynamo
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 
@@ -9,23 +8,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
 type Pokemon struct {
 	Name      string `json:"name"`
 	Evolution int    `json:"evolution"`
-	Poketype  string `json:"poketype"` //Pokepokepoketype is mapped to pokepoketype in JSON
-}
-
-type AddResponse struct {
-	Added   bool   `json:"added"`
-	Pokemon string `json:"pokemon"`
-}
-
-type DeleteResponse struct {
-	Deleted bool   `json:"deleted"`
-	Pokemon string `json:"pokemon"`
+	Poketype  string `json:"poketype"` //poketype is mapped to poketype in JSON
 }
 
 const tableName = "pokedex"
@@ -41,26 +29,6 @@ func InitSession() *dynamodb.DynamoDB {
 
 	// Create DynamoDB client
 	return dynamodb.New(sess)
-}
-
-func InitEc2() {
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-	svc := ec2.New(sess)
-
-	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
-		// An Amazon Linux AMI ID for t2.micro instances in the us-west-2 region
-		ImageId:      aws.String("ami-072056ff9d3689e7b"),
-		InstanceType: aws.String("t2.micro"),
-		MinCount:     aws.Int64(1),
-		MaxCount:     aws.Int64(1),
-	})
-	if err != nil {
-		fmt.Println("Could not create instance", err)
-		return
-	}
-	fmt.Println("Created instance", *runResult.Instances[0].InstanceId)
 }
 
 func DynamoGetPokemon(pokeName string) Pokemon {
@@ -82,7 +50,10 @@ func DynamoGetPokemon(pokeName string) Pokemon {
 	}
 	pokemon.Name = *result.Item["name"].S
 	pokemon.Poketype = *result.Item["poketype"].S
-	pokemon.Evolution, _ = strconv.Atoi(*result.Item["evolution"].N)
+	pokemon.Evolution, err = strconv.Atoi(*result.Item["evolution"].N)
+	if err != nil {
+		log.Fatalf("Got error calling Atoi: %s", err)
+	}
 	return pokemon
 }
 
