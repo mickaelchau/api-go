@@ -1,7 +1,7 @@
 provider "aws" {
     region = "eu-west-3"
-    secret_key = "1IOig964ak42xH+JSeOcKcRrF06HqDyGLg7A2qQn"
-    access_key = "AKIAZ4VIRNFV6VHVOC26"
+    secret_key = "X"
+    access_key = "X"
 }
 
 resource "aws_security_group" "api_security_terra" {
