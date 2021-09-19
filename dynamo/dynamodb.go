@@ -43,7 +43,7 @@ func DynamoGetPokemon(pokeName string) Pokemon {
 		TableName: aws.String(tableName),
 	})
 	if err != nil {
-		log.Fatalf("Got error calling DeleteItem: %s", err)
+		log.Fatalf("Got error calling GetItem: %s", err)
 	}
 	if result.Item == nil {
 		return pokemon
