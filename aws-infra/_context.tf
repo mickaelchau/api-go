@@ -3,6 +3,7 @@ locals {
   keys_type        = "RSA"
   instance_ami     = "ami-072056ff9d3689e7b"
   instance_type    = "t2.micro"
+  
   inbound_rules = [
     {
       authorized_addresses = ["0.0.0.0/0"]
