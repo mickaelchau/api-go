@@ -1,0 +1,4 @@
+main
+*.pem
+*.tfstate
+.terraform
