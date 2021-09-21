@@ -31,13 +31,14 @@ func InitSession() *dynamodb.DynamoDB {
 	return dynamodb.New(sess)
 }
 
-func DynamoGetPokedex() []Pokemon {
+func DynamoGetResources() ([]Pokemon, error) {
 	svc := InitSession()
 	out, err := svc.Scan(&dynamodb.ScanInput{
 		TableName: aws.String(tableName),
 	})
 	if err != nil {
-		log.Fatalf("Got error calling Scan: %s", err)
+		log.Printf("Got error calling Scan: %s", err)
+		return nil, err
 	}
 	var db_pokemon []Pokemon
 	var pokemon Pokemon
@@ -46,17 +47,21 @@ func DynamoGetPokedex() []Pokemon {
 	var poketype string
 	for _, poke := range out.Items {
 		name = *poke["name"].S //get the attribute "name" in map and get the str associated with it
-		evolution, _ = strconv.Atoi(*poke["evolution"].N)
+		evolution, err = strconv.Atoi(*poke["evolution"].N)
+		if err != nil {
+			log.Printf("Got error calling Atoi: %s", err)
+			return nil, err
+		}
 		poketype = *poke["poketype"].S
 		pokemon.Name = name
 		pokemon.Evolution = evolution
 		pokemon.Poketype = poketype
 		db_pokemon = append(db_pokemon, pokemon)
 	}
-	return db_pokemon
+	return db_pokemon, nil
 }
 
-func DynamoGetPokemon(pokeName string) Pokemon {
+func DynamoGetResource(pokeName string) (Pokemon, error) {
 	svc := InitSession()
 	var pokemon Pokemon
 	result, err := svc.GetItem(&dynamodb.GetItemInput{
@@ -68,21 +73,23 @@ func DynamoGetPokemon(pokeName string) Pokemon {
 		TableName: aws.String(tableName),
 	})
 	if err != nil {
-		log.Fatalf("Got error calling GetItem: %s", err)
+		log.Printf("Got error calling GetItem: %s", err)
+		return pokemon, err
 	}
 	if result.Item == nil {
-		return pokemon
+		return pokemon, nil
 	}
 	pokemon.Name = *result.Item["name"].S
 	pokemon.Poketype = *result.Item["poketype"].S
 	pokemon.Evolution, err = strconv.Atoi(*result.Item["evolution"].N)
 	if err != nil {
-		log.Fatalf("Got error calling Atoi: %s", err)
+		log.Printf("Got error calling Atoi: %s", err)
+		return pokemon, err
 	}
-	return pokemon
+	return pokemon, nil
 }
 
-func DynamoDelete(name string) bool {
+func DynamoDelete(name string) (bool, error) {
 	svc := InitSession()
 	input := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
@@ -95,31 +102,28 @@ func DynamoDelete(name string) bool {
 	_, err := svc.DeleteItem(input)
 	if err != nil {
 		//status code
-		log.Fatalf("Got error calling DeleteItem: %s", err)
-		return false
+		log.Printf("Got error calling DeleteItem: %s", err)
+		return false, err
 	}
-	return true
+	return true, nil
 }
 
-func DynamoAdd(pokemon Pokemon) bool {
+func DynamoAdd(pokemon Pokemon) (bool, error) {
 	svc := InitSession()
 	serializedPokemon, err := dynamodbattribute.MarshalMap(pokemon) //map key: value
 	if err != nil {
-		//status code
-		log.Fatalf("Error: Marsahalling Pokemon failed")
-		return false
+		log.Printf("Error: Marsahalling Pokemon failed")
+		return false, err
 	}
 
 	input := &dynamodb.PutItemInput{
 		Item:      serializedPokemon,
 		TableName: aws.String(tableName),
 	}
-
 	_, err = svc.PutItem(input)
 	if err != nil {
-		//status code
-		log.Fatalf("Got error calling PutItem: %s", err)
-		return false
+		log.Printf("Got error calling PutItem: %s", err)
+		return false, err
 	}
-	return true
+	return true, nil
 }
