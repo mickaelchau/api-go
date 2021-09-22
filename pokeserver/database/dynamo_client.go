@@ -19,20 +19,25 @@ type Pokemon struct {
 }
 
 // USE OF THIS FUNC IS PROBABLY A BAD PRACTICE
-func InitSession() *dynamodb.DynamoDB {
+func InitSession() (*dynamodb.DynamoDB, error) {
 	// Initialize a session that the SDK will use to load
 	// credentials from the shared credentials file ~/.aws/credentials
 	// and region from the shared configuration file ~/.aws/config.
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
+	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
-	}))
-
+	})
+	if err != nil {
+		return nil, err
+	}
 	// Create DynamoDB client
-	return dynamodb.New(sess)
+	return dynamodb.New(sess), nil
 }
 
 func DynamoGetResources() ([]Pokemon, error) {
-	svc := InitSession()
+	svc, err := InitSession()
+	if err != nil {
+		return nil, err
+	}
 	out, err := svc.Scan(&dynamodb.ScanInput{
 		TableName: aws.String(tableName),
 	})
@@ -62,7 +67,10 @@ func DynamoGetResources() ([]Pokemon, error) {
 }
 
 func DynamoGetResource(pokeName string) (Pokemon, error) {
-	svc := InitSession()
+	svc, err := InitSession()
+	if err != nil {
+		return Pokemon{}, err
+	}
 	var pokemon Pokemon
 	result, err := svc.GetItem(&dynamodb.GetItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
@@ -89,8 +97,11 @@ func DynamoGetResource(pokeName string) (Pokemon, error) {
 	return pokemon, nil
 }
 
-func DynamoDelete(name string) (bool, error) {
-	svc := InitSession()
+func DynamoDelete(name string) error {
+	svc, err := InitSession()
+	if err != nil {
+		return err
+	}
 	input := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"name": {
@@ -99,21 +110,24 @@ func DynamoDelete(name string) (bool, error) {
 		},
 		TableName: aws.String(tableName),
 	}
-	_, err := svc.DeleteItem(input)
+	_, err = svc.DeleteItem(input)
 	if err != nil {
 		//status code
 		log.Printf("Got error calling DeleteItem: %s", err)
-		return false, err
+		return err
 	}
-	return true, nil
+	return nil
 }
 
-func DynamoAdd(pokemon Pokemon) (bool, error) {
-	svc := InitSession()
+func DynamoAdd(pokemon Pokemon) error {
+	svc, err := InitSession()
+	if err != nil {
+		return err
+	}
 	serializedPokemon, err := dynamodbattribute.MarshalMap(pokemon) //map key: value
 	if err != nil {
 		log.Printf("Error: Marsahalling Pokemon failed")
-		return false, err
+		return err
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -123,7 +137,7 @@ func DynamoAdd(pokemon Pokemon) (bool, error) {
 	_, err = svc.PutItem(input)
 	if err != nil {
 		log.Printf("Got error calling PutItem: %s", err)
-		return false, err
+		return err
 	}
-	return true, nil
+	return nil
 }

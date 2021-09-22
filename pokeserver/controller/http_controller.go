@@ -41,10 +41,12 @@ func handleGets(response http.ResponseWriter, request *http.Request) {
 	var getsResult []dynamo.Pokemon
 	var err error
 	getsResult, err = service.GetAllPokemons()
-	if getsResult == nil || err != nil {
+	if err != nil {
+		log.Printf("Got error calling GetAllPokemons: %s", err.Error())
 		handleError(response, internalServerError, http.StatusInternalServerError)
+	} else {
+		json.NewEncoder(response).Encode(getsResult)
 	}
-	json.NewEncoder(response).Encode(getsResult)
 }
 
 func handleGet(response http.ResponseWriter, request *http.Request) {
@@ -65,13 +67,13 @@ func handleGet(response http.ResponseWriter, request *http.Request) {
 func handleDelete(response http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	name := vars["name"]
-	var deleteResponse DeleteResponse
-	var err error
-	deleteResponse.Deleted, err = service.RemoveFromPokedex(name)
+	err := service.RemoveFromPokedex(name)
 	if err != nil {
 		handleError(response, internalServerError, http.StatusInternalServerError)
 	} else {
+		var deleteResponse DeleteResponse
 		deleteResponse.Pokemon = name
+		deleteResponse.Deleted = true
 		json.NewEncoder(response).Encode(deleteResponse)
 	}
 }
@@ -87,14 +89,14 @@ func HandlePostAndPut(response http.ResponseWriter, request *http.Request) {
 	if pokebody.Name == "" || pokebody.Poketype == "" || pokebody.Evolution == 0 {
 		handleError(response, invalidBody, http.StatusBadRequest)
 	} else {
-		var addResponse AddResponse
-		var err error
-		addResponse.Added, err = service.AddToPokedex(pokebody)
+		err := service.AddToPokedex(pokebody)
 		if err != nil {
 			handleError(response, invalidBody, http.StatusBadRequest)
+		} else {
+			var addResponse AddResponse
+			addResponse.Pokemon = pokebody.Name
+			json.NewEncoder(response).Encode(addResponse)
 		}
-		addResponse.Pokemon = pokebody.Name
-		json.NewEncoder(response).Encode(addResponse)
 	}
 }
 
