@@ -1,6 +1,8 @@
 locals {
   application_name = "Pokédex API REST"
   keys_type        = "RSA"
+
+  ec2_keys_name = "instance_ec2_keys"
   instance_ami     = "ami-072056ff9d3689e7b"
   instance_type    = "t2.micro"
   

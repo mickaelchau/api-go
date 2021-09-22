@@ -1,0 +1,14 @@
+[Unit]
+Description=Pokeserver
+
+[Service]
+User=ec2-user
+WorkingDirectory=~
+Restart=always
+RestartSec=10
+Type=simple
+ExecStart=/home/ec2-user/main
+Environment=PORT=8000
+
+[Install]
+WantedBy=multi-user.target

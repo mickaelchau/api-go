@@ -9,19 +9,14 @@ module "key_pair" {
 }
 
 resource "aws_key_pair" "ec2_keys" {
-  key_name   = "instance_ec2_keys"
+  key_name   = local.ec2_keys_name
   public_key = tls_private_key.keys.public_key_openssh
 }
 
-/*resource "aws_lb" "api_load_balancer" {
-  name = "API load balancer"
-  internal = true
-  load_balancer_type = "network"
-
-  tags = {
-    Name = "${var.service_name} load balancer"
-  }
-}*/
+resource "local_file" "local_pem" { 
+  filename = "${path.module}/${local.ec2_keys_name}.pem"
+  content = tls_private_key.keys.private_key_pem
+}
 
 resource "aws_instance" "api_ec2" {
   ami             = local.instance_ami

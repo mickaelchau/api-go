@@ -1,0 +1,22 @@
+---
+- name: Play which is running my service on ec2 instance
+  become: true
+  hosts: all
+  remote_user: micka
+  tasks:
+  - name: copy main into ec2 instance
+    copy:
+      src: main
+      dest: main
+      mode: '0777'
+  - name: cp .aws folder
+    copy:
+      src: /home/micka/.aws
+      dest: .
+  - name: copy service file into ec2 instance
+    copy:
+      src: pokeserver.service
+      dest: /lib/systemd/system/pokeserver.service
+      mode: '0777'
+  - name: start 'pokeserver' service
+    command: 'sudo service pokeserver start'
